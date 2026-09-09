@@ -1,0 +1,2 @@
+# customer_data_analysis_sql_project
+Data Analytics Project
