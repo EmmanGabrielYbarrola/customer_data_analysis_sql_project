@@ -78,3 +78,99 @@ SELECT age_group, SUM(purchase_amount) AS total_revenue
 FROM customer
 GROUP BY age_group
 ORDER BY total_revenue DESC;
+
+--Q11. Which product categories contribute the most to total revenue?
+WITH category_revenue AS (
+    SELECT
+        category,
+        SUM(purchase_amount) AS total_revenue
+    FROM customer
+    GROUP BY category
+)
+SELECT
+    category,
+    total_revenue,
+    ROUND(
+        100.0 * total_revenue / SUM(total_revenue) OVER (),
+        2
+    ) AS revenue_percentage
+FROM category_revenue
+ORDER BY total_revenue DESC;
+
+
+--Q.12 Does using a discount correlate with lower purchase amounts?
+SELECT
+    category,
+    ROUND(
+        AVG(
+            CASE
+                WHEN discount_applied = 'Yes'
+                THEN purchase_amount
+            END
+        ),
+        2
+    ) AS avg_discounted_purchase,
+    ROUND(
+        AVG(
+            CASE
+                WHEN discount_applied = 'No'
+                THEN purchase_amount
+            END
+        ),
+        2
+    ) AS avg_non_discounted_purchase,
+    ROUND(
+        AVG(
+            CASE
+                WHEN discount_applied = 'Yes'
+                THEN purchase_amount
+            END
+        )
+        -
+        AVG(
+            CASE
+                WHEN discount_applied = 'No'
+                THEN purchase_amount
+            END
+        ),
+        2
+    ) AS average_difference
+FROM customer
+GROUP BY category
+ORDER BY average_difference DESC;
+
+--Q. 13 What percentage of revenue comes from the highest-spending categories?
+WITH category_revenue AS (
+    SELECT
+        category,
+        SUM(purchase_amount) AS total_revenue
+    FROM customer
+    GROUP BY category
+),
+revenue_analysis AS (
+    SELECT
+        category,
+        total_revenue,
+
+        SUM(total_revenue) OVER (
+            ORDER BY total_revenue DESC
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS cumulative_revenue,
+        SUM(total_revenue) OVER () AS overall_revenue
+    FROM category_revenue
+)
+SELECT
+    category,
+    total_revenue,
+    ROUND(
+        100.0 * total_revenue / overall_revenue,
+        2
+    ) AS revenue_percentage,
+
+    ROUND(
+        100.0 * cumulative_revenue / overall_revenue,
+        2
+    ) AS cumulative_revenue_percentage
+
+FROM revenue_analysis
+ORDER BY total_revenue DESC;
